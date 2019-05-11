@@ -2,13 +2,13 @@
 
 SUBDIR = bootloader
 
-run : all
-	$(MAKE) run -C bootloader
-
 all:
 	@for i in $(SUBDIR); do\
 		$(MAKE) -C $$i MAKEFLAGS=-w; \
 	done
+
+run : all
+	$(MAKE) run -C bootloader
 
 clean:
 	@for i in $(SUBDIR); do\

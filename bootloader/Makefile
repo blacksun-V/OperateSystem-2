@@ -11,10 +11,11 @@ LOADER_TARGET := loader.bin
 
 RM := -rm -rf
 
-all : $(BOOT_TARGET) $(LOADER_TARGET) $(BOOT_IMG) mount_file
-	@dd if=$(BOOT_TARGET) of=$(BOOT_IMG) bs=512 count=1 conv=notrunc
+all : mount_file
 
-mount_file: $(BOOT_IMG)
+mount_file: $(BOOT_IMG) $(BOOT_TARGET) $(LOADER_TARGET)
+	@dd if=$(BOOT_TARGET) of=$(BOOT_IMG) bs=512 count=1 conv=notrunc
+	
 	@echo "复制文件至内核"; \
 	message=`hdiutil mount boot.img`; \
 	drive=`echo $${message} | cut -d ' ' -f 1`; \
