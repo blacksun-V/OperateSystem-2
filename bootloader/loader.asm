@@ -1,4 +1,4 @@
-org 80000h
+org 10000h
 
 
 jmp Init
@@ -11,9 +11,6 @@ OffsetOfKernel  equ   0x100000  ;内核位于1M处
 
 TempBaseOfKernel  equ  0x00
 TempOffsetOfKernel equ 0x7e00
-
-TempBase  equ 0b000h; 临时数据缓冲区
-TempOffset equ 0h; 临时数据缓冲区偏移地址
 
 MemoryStructBufferAddr equ 0x7e00
 
@@ -35,6 +32,8 @@ MemoryStructBufferAddr equ 0x7e00
 GDT_START:  Descriptor 0,            0, 0              ; 空描述符
 CODE_32:    Descriptor 0,      0xfffff, DA_32|DA_LIMIT_4K|DA_DPL0|DA_CR
 DATA_32:    Descriptor 0,      0xfffff, DA_32|DA_LIMIT_4K|DA_DPL0|DA_DRW
+; CODE_32:	dd	0x0000FFFF,0x00CF9A00
+; DATA_32:	dd	0x0000FFFF,0x00CF9200
 
 ;GDT表长度
 GdtLen equ $ - GDT_START 
@@ -61,16 +60,6 @@ GdtPtr64 dw Gdt64Len - 1
 
 SelectorCode64 equ CODE_64 - GDT64_START
 SelectorData64 equ DATA_64 - GDT64_START
-
-
-[SECTION idt]
-IDT:
-    times 0x50 dq 0
-IDT_END:
-
-IDT_POINTER:
-    dw IDT_END - IDT - 1
-    dd IDT
 
 
 
@@ -106,7 +95,7 @@ Open_Address_A20:
     
     cli                 ;关闭外部中断
 
-    db 0x66 ;修饰lgdt 表明 是32位宽
+    ; db 0x66 ;修饰lgdt 表明 是32位宽
     lgdt [GdtPtr]  ;加载GDT
 
     ;置CRO第0位开启保护模式
@@ -137,9 +126,9 @@ Search_File_In_Root:
     dec word [LastSectorInRoot]    ;读取一次 减一
 
     ;设置 ES:BX 临时一放根目录扇区数据
-    mov ax, TempBaseOfKernel
+    mov ax, 00h
     mov es ,ax
-    mov bx, TempOffsetOfKernel
+    mov bx, 8000h
     ;读取的扇区号
     mov ax, [CurrentSectorNo]
     mov cl, 1
@@ -147,7 +136,7 @@ Search_File_In_Root:
     
     ;设置指针
     mov si, KernelFileName
-    mov di, TempOffsetOfKernel
+    mov di, 8000h
     cld ;清空DF
     mov dx, 16 ;一个根目录扇区可以放16个目录项
 
@@ -213,6 +202,7 @@ Get_Start_Entry_And_Init: ;获取起始簇号 计算簇号对应的扇区 并初
 Load_Kernel_File:
     mov cl, 1                       ; ┓ 从扇区中加载文件内容
     call Function_Read_One_Sector   ; ┛
+    pop ax
     
 ;移动内核至高位
 Prepare_Mov_Kernel:
@@ -230,7 +220,7 @@ Prepare_Mov_Kernel:
     mov fs, ax
 
     ;地址偏移指针
-    mov edi, dword [OffsetOfKernel]
+    mov edi, dword [OffsetOfKernelFileCount]
 
     ;临时数据缓存去 储存有已经读入的扇区数据
     mov ax, TempBaseOfKernel
@@ -251,7 +241,7 @@ Mov_Kernel:
     mov eax, 0x1000
     mov ds, eax
     ;记录已复制的字节偏移
-    mov dword [OffsetOfKernel], edi
+    mov dword [OffsetOfKernelFileCount], edi
 
     pop esi
     pop ds
@@ -261,7 +251,6 @@ Mov_Kernel:
     pop cx
 
 ; 寻找下一个扇区
-    pop ax ;文件簇号
     call Function_GetNextEntry ;读取下一簇 到  ax中
     cmp ax, 0fffh ;如果ax值为0fffh 说明读到了文件尾
     jz Load_Kernel_File_Finish
@@ -270,7 +259,8 @@ Mov_Kernel:
     mov dx, RootDirSectors
     add ax, dx
     add ax, SectorBalance
-    add bx, [BytesPerSector] ;bx地址偏移一个扇区（一个簇号的大小）
+    ; 这里缓存区仅仅是暂存数据 然后复制到高位 不需要偏移指针了
+    ; add bx, [BytesPerSector] ;bx地址偏移一个扇区（一个簇号的大小）
     jmp Load_Kernel_File
 
 Load_Kernel_File_Finish:
@@ -309,6 +299,7 @@ Get_Memory_Struct:
     int	15h
     jc Get_Memory_Fail
     add di, 20
+    inc	dword	[MemStructNumber]
     
     cmp ebx, 0
     jne Get_Memory_Struct ;获取失败 重试
@@ -316,6 +307,8 @@ Get_Memory_Struct:
 
 
 Get_Memory_Fail:
+    mov	dword	[MemStructNumber],	0
+
     mov bp, GetMemoryFail
     mov cx, 20
     mov bl, 1
@@ -419,6 +412,7 @@ Get_SVGA_MODE_INFO:
 
     jnz Get_SVGA_Info_Fail
 
+    inc	dword		[SVGAModeCounter]
     add esi, 2
     add edi, 0x100
     
@@ -450,7 +444,7 @@ Set_SVGA_Mode:
 ; 	    00h successful
 ; 	    01h failed
 
-    mov bx, 4142h
+    mov bx, 4180h
     int 10h
 
     cmp ax, 004fh
@@ -468,7 +462,7 @@ Set_SVGA_Mode_Fail:
 
 Prepare_GoTo_Protect_Mode:
     cli ;close interrupt
-    db 0x66
+    ; db 0x66
     lgdt [GdtPtr]
     mov eax, cr0
     or eax, 1
@@ -517,7 +511,7 @@ Init_Temp_Page_Table:
 	mov	dword	[0x92028],	0xa00083
 
 Load_GDTR:
-    db 0x66
+    ; db 0x66
     lgdt [GdtPtr64]
 
 ReInit_Register:
@@ -663,10 +657,56 @@ Function_Calculation_CHS:
     pop bx ;弹出内容到bx寄存器
     ret
 
+
+; Function_GetNextEntry:
+
+; 	push	es
+; 	push	bx
+; 	push	ax
+; 	mov	ax,	00
+; 	mov	es,	ax
+; 	pop	ax
+; 	mov	byte	[Odd],	0
+; 	mov	bx,	3
+; 	mul	bx
+; 	mov	bx,	2
+; 	div	bx
+; 	cmp	dx,	0
+; 	jz	Label_Even
+; 	mov	byte	[Odd],	1
+
+; Label_Even:
+
+; 	xor	dx,	dx
+; 	mov	bx,	[BytesPerSector]
+; 	div	bx
+; 	push	dx
+; 	mov	bx,	8000h
+; 	add	ax,	FatTableStartSector
+; 	mov	cl,	2
+; 	call	Function_Read_One_Sector
+	
+; 	pop	dx
+; 	add	bx,	dx
+; 	mov	ax,	[es:bx]
+; 	cmp	byte	[Odd],	1
+; 	jnz	Label_Even_2
+; 	shr	ax,	4
+
+; Label_Even_2:
+; 	and	ax,	0FFFh
+; 	pop	bx
+; 	pop	es
+; 	ret
+
 ; 加载FAT表项
 Function_GetNextEntry:
     push es
     push bx ;缓存区要设置为临时缓存区 因此暂存之前的
+    push ax
+    mov ax, 00
+    mov es, ax
+    pop ax
     mov byte [Odd], 0 ;标志置零
 
     mov bx, 3 ;┓
@@ -680,18 +720,18 @@ Function_GetNextEntry:
 
 Load_Fat_Item: ;加载Fat表项    
     ;计算该表项在FAT表所占的几个扇区中是第几个扇区
+    xor dx, dx
     mov bx, [BytesPerSector]
     div bx
     push dx ;余数是 字节除以 字节每扇区 后 多余的字节 也就是说 表项是从这个字节开始的
 
     ;设置临时缓冲区
-    mov bx, TempOffset
+    mov bx, 8000h
     ; push ax
     ; mov ax, TempBase
     ; mov es, ax
     ; pop ax
-    mov dx, TempBase
-    mov es, dx
+    
     ;加载这两个扇区数据
     add ax, FatTableStartSector
     mov cl, 2
@@ -827,6 +867,13 @@ Function_DisplayAL:
 
     ret
 
+IDT:
+    times 0x50 dq 0
+IDT_END:
+
+IDT_POINTER:
+    dw IDT_END - IDT - 1
+    dd IDT
 
 StartLoader:            db 'Start Loader...'
 NoKernelFound:          db "No Kernel Found"
@@ -853,6 +900,9 @@ LineNumber:  db 0 ;记录当前屏幕行号
 DisplayPosition: dd 0
 KernelFileName: db "KERNEL  BIN", 0
 Odd: db 0 ;判断奇偶用
+OffsetOfKernelFileCount: dd OffsetOfKernel
+MemStructNumber:    dd  0
+SVGAModeCounter:    dd  0
 
 LastSectorInRoot: dw 0 ;根目录剩余扇区
 CurrentSectorNo:  dw 0 ;当前正要读取的根目录扇区号

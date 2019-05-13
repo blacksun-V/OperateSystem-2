@@ -9,6 +9,8 @@ BOOT_IMG := boot.img
 LOADER := loader.asm
 LOADER_TARGET := loader.bin
 
+KERNEL := kernel.bin
+
 RM := -rm -rf
 
 all : mount_file
@@ -21,7 +23,7 @@ mount_file: $(BOOT_IMG) $(BOOT_TARGET) $(LOADER_TARGET)
 	drive=`echo $${message} | cut -d ' ' -f 1`; \
 	volume=`echo $${message} | cut -d ' ' -f 2,3 | sed 's/ /\\\\ /g' `; \
 	eval "install $(LOADER_TARGET) $${volume}/"; \
-	eval "install $(LOADER_TARGET) $${volume}/kernel.bin"; \
+	eval "install ../kernel/$(KERNEL) $${volume}/"; \
 	hdiutil eject $${drive}; 
 	@echo "复制完毕"
 

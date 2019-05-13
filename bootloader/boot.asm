@@ -12,8 +12,8 @@ RootDirStartSector equ 19 ;根目录起始扇区 保留扇区 + FAT表1扇区 + 
 SectorBalance      equ 17 ;用于计算真实簇号
 FatTableStartSector equ 1 ;FAT表的起始扇区
 
-BaseOfLoader	   equ 08000h	; LOADER.BIN     被加载到的位置 ----  段地址
-OffsetOfLoader     equ 0000h	; LOADER.BIN 被加载到的位置 ---- 偏移地址
+BaseOfLoader	   equ 0x1000	; LOADER.BIN     被加载到的位置 ----  段地址
+OffsetOfLoader     equ 0x00	; LOADER.BIN 被加载到的位置 ---- 偏移地址
 
 TempBase  equ 0h; 临时数据缓冲区
 TempOffset equ 8000h; 临时数据缓冲区偏移地址
