@@ -55,7 +55,8 @@ void Start_Kernel()
 	Pos.FB_addr = (int *)0xffff800000a00000;
 	Pos.FB_length = (Pos.XResolution * Pos.YResolution * 4);
 
-    color_printk(YELLOW,BLACK,"Hello World!");
+    color_printk(YELLOW,BLACK,"Hello\t\t World!\n");
+    color_printk(WHITE,BLACK,"TEST %s","HAHAHHA");
 
     while(1);
 

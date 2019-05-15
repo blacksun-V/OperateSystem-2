@@ -40,7 +40,125 @@ void putchar(unsigned int *fb, int XResolution, int x, int y, unsigned int FRcol
 //讲数字转化为对应进制精度的字符串
 static char *number(char *str, long num, int base, int size, int precision, int type)
 {
-    
+    const char BigDigits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char SmallDigits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    char c, sign, tmp[50];
+    char *digits = BigDigits;
+    //大小写数字
+    if (type & SMALL)
+    {
+        digits = SmallDigits;
+    }
+    //是否补零
+    if (type & LEFT)
+    {
+        type &= ~ZEROPAD;
+    }
+
+    if (base < 2 || base > 46)
+    {
+        return 0;
+    }
+
+    c = (type & ZEROPAD) ? '0' : ' ';
+    sign = 0;
+
+    if (type & SIGN && num < 0)
+    {
+        sign = '-';
+        num = -num;
+    }
+    else
+    {
+        sign = (type & PLUS) ? '+' : ((type & SPACE) ? ' ' : 0);
+    }
+
+    if (sign)
+    {
+        size--;
+    }
+
+    //精度
+    if (type & SPECIAL)
+    {
+        if (base == 16)
+        {
+            size -= 2;
+        }
+        else if (base == 8)
+        {
+            size--;
+        }
+    }
+
+    int i = 0;
+    if (num == 0)
+    {
+        tmp[i++] = '0';
+    }
+    else
+        while (num != 0)
+        {
+            tmp[i++] = digits[do_div(num, base)];
+        }
+
+    if (i > precision)
+    {
+        precision = 1;
+    }
+
+    size -= precision;
+
+    if (!(type & (ZEROPAD + LEFT)))
+    {
+        while (size-- > 0)
+        {
+            *str++ = ' ';
+        }
+    }
+
+    if (sign)
+    {
+        *str++ = sign;
+    }
+
+    if (type & SPECIAL)
+    {
+        if (base == 8)
+        {
+            *str++ = '0';
+        }
+        else if (base == 16)
+        {
+            *str++ = '0';
+            *str++ = digits[33];
+        }
+    }
+
+    if (!(type & LEFT))
+    {
+        while (size-- > 0)
+        {
+            *str++ = c;
+        }
+    }
+
+    while (i < precision--)
+    {
+        *str++ = '0';
+    }
+
+    while (i-- > 0)
+    {
+        *str++ = tmp[i];
+    }
+
+    while (size-- > 0)
+    {
+        *str++ = ' ';
+    }
+    return str;
 }
 
 //移动指针至非数字 并返回数字值
@@ -202,19 +320,60 @@ int vsprintf(char *buf, const char *fmt, va_list args)
             }
             break;
         case 'o': //有符号八进制
+            if (qualifier = 'l')
+            {
+                str = number(str, va_arg(args, unsigned long), 8, printWidth, precision, flags);
+            }
+            else
+            {
+                str = number(str, va_arg(args, unsigned int), 8, printWidth, precision, flags);
+            }
             break;
         case 'p': //指针地址
+            if (printWidth == -1)
+            {
+                //宽度是一个指针的宽度
+                printWidth = 2 * sizeof(void *);
+                flags |= ZEROPAD;
+            }
+            str = number(str, (unsigned long)va_arg(args, void *), 16, printWidth, precision, flags);
             break;
         case 'x': //无符号十六进制整数
-            break;
+            flags |= SMALL;
         case 'X': //无符号十六进制整数（大写字母）
+            if (qualifier == 'l')
+            {
+                str = number(str, va_arg(args, unsigned long), 16, printWidth, precision, flags);
+            }
+            else
+            {
+                str = number(str, va_arg(args, unsigned int), 16, printWidth, precision, flags);
+            }
             break;
         case 'd':
         case 'i': //有符号十进制整数
-            break;
+            flags |= SIGN;
         case 'u': //无符号十进制整数
+            if (qualifier == 'l')
+            {
+                str = number(str, va_arg(args, unsigned long), 10, printWidth, precision, flags);
+            }
+            else
+            {
+                str = number(str, va_arg(args, unsigned int), 10, printWidth, precision, flags);
+            }
             break;
         case 'n': //无输出
+            if (qualifier == 'l')
+            {
+                long *ip = va_arg(args, long *);
+                *ip = (str - buf);
+            }
+            else
+            {
+                int *ip = va_arg(args, int *);
+                *ip = (str - buf);
+            }
             break;
         case '%': //转义
             *str++ = '%';
@@ -252,8 +411,8 @@ int color_printk(unsigned int FRColor, unsigned int BKcolor, const char *fmt, ..
         if (character == '\n') //换行
         {
             //行数加1 列数置零
-            Pos.XPosition++;
-            Pos.YPosition = 0;
+            Pos.YPosition++;
+            Pos.XPosition = 0;
         }
         else if (character == '\b') //退格
         {
