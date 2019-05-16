@@ -56,7 +56,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
         type &= ~ZEROPAD;
     }
 
-    if (base < 2 || base > 46)
+    if (base < 2 || base > 36)
     {
         return 0;
     }
@@ -105,7 +105,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
 
     if (i > precision)
     {
-        precision = 1;
+        precision = i;
     }
 
     size -= precision;
@@ -186,7 +186,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
             *str++ = *fmt;
             continue;
         }
-
+        flags = 0;
         //是否继续检查标志位
         int checkFlag = 1;
         while (checkFlag)

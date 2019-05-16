@@ -2,6 +2,7 @@
 #include "printk.h"
 #include "gate.h"
 #include "trap.h"
+#include "memory.h"
 
 void Start_Kernel()
 {
@@ -67,7 +68,9 @@ void Start_Kernel()
 	sys_vector_init();
 
 	// i = 1/0;
-	i = *(int *)0xffff80000aa00000;
+	// i = *(int *)0xffff80000aa00000;
+
+    init_memory();
 
     while(1);
 
