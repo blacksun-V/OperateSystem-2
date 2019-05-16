@@ -4,6 +4,8 @@
 #include "trap.h"
 #include "memory.h"
 
+struct Global_Memory_Descriptor memory_management_struct = {{0},0};
+
 void Start_Kernel()
 {
     int *addr = (int *)0xffff800000a00000; //帧缓存地址
@@ -69,7 +71,8 @@ void Start_Kernel()
 
 	// i = 1/0;
 	// i = *(int *)0xffff80000aa00000;
-
+    
+    color_printk(RED, BLACK, "memory init \n");
     init_memory();
 
     while(1);
