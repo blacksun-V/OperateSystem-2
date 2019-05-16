@@ -58,9 +58,16 @@ void Start_Kernel()
 	Pos.FB_length = (Pos.XResolution * Pos.YResolution * 4);
 
     color_printk(YELLOW,BLACK,"Hello\t\t World!\n");
-    color_printk(WHITE,BLACK,"TEST %s","HAHAHHA");
+    color_printk(WHITE,BLACK,"TEST %s","HAHAHHA\n\n");
 
-    i = i / 0;
+    load_TR(8);
+
+	set_tss64(0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00);
+
+	sys_vector_init();
+
+	// i = 1/0;
+	i = *(int *)0xffff80000aa00000;
 
     while(1);
 
