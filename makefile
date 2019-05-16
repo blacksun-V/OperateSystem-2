@@ -2,13 +2,14 @@
 
 SUBDIR = bootloader
 
+run : all
+	$(MAKE) run -C bootloader
+
 all:
 	@for i in $(SUBDIR); do\
 		$(MAKE) -C $$i MAKEFLAGS=-w; \
 	done
 
-run : all
-	$(MAKE) run -C bootloader
 
 CLEAN_SUBDIR = bootloader kernel
 

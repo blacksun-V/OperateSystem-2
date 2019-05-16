@@ -1,5 +1,7 @@
 #include "lib.h"
 #include "printk.h"
+#include "gate.h"
+#include "trap.h"
 
 void Start_Kernel()
 {
@@ -57,6 +59,8 @@ void Start_Kernel()
 
     color_printk(YELLOW,BLACK,"Hello\t\t World!\n");
     color_printk(WHITE,BLACK,"TEST %s","HAHAHHA");
+
+    i = i / 0;
 
     while(1);
 
