@@ -75,7 +75,7 @@ void Start_Kernel(void)
     color_printk(YELLOW,BLACK,"Hello\t\t World!\n");
     color_printk(WHITE,BLACK,"TEST %s","HAHAHHA\n\n");
 
-    load_TR(8);
+    load_TR(10);
 
 	set_tss64(_stack_start, _stack_start, _stack_start, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00);
 
