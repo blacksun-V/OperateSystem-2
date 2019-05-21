@@ -1,25 +1,25 @@
+
+#include "linkage.h"
+
 .section .text
 
-.globl _start
+ENTRY(_start)
 
-//初始化寄存器
-_start:
-	xor %ax,	%ax
-    mov $0x10,	%ax
-    mov %ax,	%ds
-    mov	%ax,	%es
+	mov	$0x10,	%ax
+	mov	%ax,	%ds
+	mov	%ax,	%es
 	mov	%ax,	%fs
 	mov	%ax,	%ss
 	mov	$0x7E00,	%esp
 
-//========加载GDTR指针
-    lgdt	GDT_POINTER(%rip)
+//=======	load GDTR
 
-//========加载IDTR指针
+	lgdt	GDT_POINTER(%rip)
+
+//=======	load	IDTR
 
 	lidt	IDT_POINTER(%rip)
 
-//=====重置寄存器
 	mov	$0x10,	%ax
 	mov	%ax,	%ds
 	mov	%ax,	%es
@@ -29,7 +29,7 @@ _start:
 
 	movq	$0x7E00,	%rsp
 
-//=======	切换
+//=======	load	cr3
 
 	movq	$0x101000,	%rax
 	movq	%rax,		%cr3
@@ -49,9 +49,8 @@ entry64:
 	movq	%rax,	%es
 	movq	%rax,	%gs
 	movq	%rax,	%ss
-	movq	$0xffff800000007E00,	%rsp		/* rsp address */
+	movq	_stack_start(%rip),	%rsp		/* rsp address */
 
-//设置中断向量表
 setup_IDT:							
 	leaq	ignore_int(%rip),	%rdx
 	movq	$(0x08 << 16),	%rax
@@ -93,10 +92,8 @@ setup_TSS64:
 	shrq	$32,	%rdx
 	movq	%rdx,	72(%rdi)
 
-	//TSS描述段被加载到TR寄存器后 重复加载会导致异常
-	//mov	$0x40,	%ax
-	//ltr	%ax
-
+//	mov	$0x40,	%ax
+//	ltr	%ax
 
 	movq	go_to_kernel(%rip),	%rax		/* movq address */
 	pushq	$0x08
@@ -105,6 +102,7 @@ setup_TSS64:
 
 go_to_kernel:
 	.quad	Start_Kernel
+
 
 //=======	ignore_int
 
@@ -174,10 +172,15 @@ Loop:
 int_msg:
 	.asciz "Unknown interrupt or fault at RIP\n"
 
+ENTRY(_stack_start)
+	.quad	init_task_union + 32768
 
-.align 8  //页表项扩展至8B
 
-.org 0x1000
+
+//=======	init page
+.align 8
+
+.org	0x1000
 
 __PML4E:
 
@@ -212,9 +215,7 @@ __PDE:
 	.quad	0xe0e00083
 	.fill	499,8,0
 
-
-
-//===========GDT Table  全局描述符表
+//=======	GDT_Table
 
 .section .data
 
@@ -235,8 +236,7 @@ GDT_POINTER:
 GDT_LIMIT:	.word	GDT_END - GDT_Table - 1
 GDT_BASE:	.quad	GDT_Table
 
-
-//=======	IDT_Table  中断描述符表
+//=======	IDT_Table
 
 .globl IDT_Table
 
@@ -248,8 +248,7 @@ IDT_POINTER:
 IDT_LIMIT:	.word	IDT_END - IDT_Table - 1
 IDT_BASE:	.quad	IDT_Table
 
-
-//=======	TSS64_Table 任务段
+//=======	TSS64_Table
 
 .globl	TSS64_Table
 
@@ -257,8 +256,8 @@ TSS64_Table:
 	.fill  13,8,0
 TSS64_END:
 
+
 TSS64_POINTER:
 TSS64_LIMIT:	.word	TSS64_END - TSS64_Table - 1
 TSS64_BASE:	.quad	TSS64_Table
-
 

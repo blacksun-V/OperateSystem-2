@@ -1,5 +1,21 @@
+/***************************************************
+*		版权声明
+*
+*	本操作系统名为：MINE
+*	该操作系统未经授权不得以盈利或非盈利为目的进行开发，
+*	只允许个人学习以及公开交流使用
+*
+*	代码最终所有权及解释权归田宇所有；
+*
+*	本模块作者：	田宇
+*	EMail:		345538255@qq.com
+*
+*
+***************************************************/
+
 #ifndef __LIB_H__
 #define __LIB_H__
+
 
 #define NULL 0
 
@@ -14,6 +30,7 @@
 #define cli()	 	__asm__ __volatile__ ("cli	\n\t":::"memory")
 #define nop() 		__asm__ __volatile__ ("nop	\n\t")
 #define io_mfence() 	__asm__ __volatile__ ("mfence	\n\t":::"memory")
+
 
 struct List
 {
@@ -408,5 +425,7 @@ inline void wrmsr(unsigned long address,unsigned long value)
 {
 	__asm__ __volatile__("wrmsr	\n\t"::"d"(value >> 32),"a"(value & 0xffffffff),"c"(address):"memory");	
 }
+
+
 
 #endif

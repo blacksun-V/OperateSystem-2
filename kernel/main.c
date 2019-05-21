@@ -3,7 +3,7 @@
 #include "gate.h"
 #include "trap.h"
 #include "memory.h"
-
+#include "task.h"
 
 /*
 		static var 
@@ -77,7 +77,7 @@ void Start_Kernel(void)
 
     load_TR(8);
 
-	set_tss64(0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00);
+	set_tss64(_stack_start, _stack_start, _stack_start, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00, 0xffff800000007c00);
 
 	sys_vector_init();
 
@@ -92,22 +92,28 @@ void Start_Kernel(void)
     color_printk(RED, BLACK, "memory init \n");
     init_memory();
     
-    struct Page * page = NULL;
-    //申请64个页试一下
-    color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
-	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
+    // struct Page * page = NULL;
+    // //申请64个页试一下
+    // color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
+	// color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
 
-	page = alloc_pages(ZONE_NORMAL,40,PG_PTable_Maped | PG_Active | PG_Kernel);
+	// page = alloc_pages(ZONE_NORMAL,40,PG_PTable_Maped | PG_Active | PG_Kernel);
 
-	for(i = 0;i <= 40;i++)
-	{
-		color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\t",i,(page + i)->attribute,(page + i)->PHY_address);
-		i++;
-		color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\n",i,(page + i)->attribute,(page + i)->PHY_address);
-	}
+	// for(i = 0;i <= 40;i++)
+	// {
+	// 	color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\t",i,(page + i)->attribute,(page + i)->PHY_address);
+	// 	i++;
+	// 	color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\n",i,(page + i)->attribute,(page + i)->PHY_address);
+	// }
 
-	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
-	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
+	// color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
+	// color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
+
+    color_printk(RED,BLACK,"interrupt init \n");
+	init_interrupt();
+
+    color_printk(RED,BLACK,"task_init \n");
+	task_init();
 
     while(1);
 

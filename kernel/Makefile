@@ -21,6 +21,12 @@ TRAP_TARGET := trap.o
 MEMORY := memory.c
 MEMROY_TARGET := memory.o
 
+INTERRUPT := interrupt.c
+INTERRUPT_TARGET := interrupt.o
+
+TASK := task.c
+TASK_TARGET := task.o
+
 LIB := lib.h
 
 SYSTEM := system
@@ -33,8 +39,8 @@ RM := -rm -rf
 all : $(SYSTEM)
 	objcopy -I elf64-x86-64 -S -R ".eh_frame" -R ".comment" -O binary $(SYSTEM) $(TARGET)
 
-$(SYSTEM):	$(HEAD_TARGET) $(ENTRY_TARGET) $(MAIN_TARGET) $(PRINTK_TARGET) $(TRAP_TARGET) $(MEMROY_TARGET)
-	ld -b elf64-x86-64 -z muldefs -o $(SYSTEM) $(HEAD_TARGET) $(ENTRY_TARGET) $(MAIN_TARGET) $(PRINTK_TARGET) $(TRAP_TARGET) $(MEMROY_TARGET) -T Kernel.lds 
+$(SYSTEM):	$(HEAD_TARGET) $(ENTRY_TARGET) $(MAIN_TARGET) $(PRINTK_TARGET) $(TRAP_TARGET) $(MEMROY_TARGET) $(INTERRUPT_TARGET) $(TASK_TARGET)
+	ld -b elf64-x86-64 -z muldefs -o $(SYSTEM) $(HEAD_TARGET) $(ENTRY_TARGET) $(MAIN_TARGET) $(PRINTK_TARGET) $(TRAP_TARGET) $(MEMROY_TARGET) $(INTERRUPT_TARGET) $(TASK_TARGET) -T Kernel.lds 
 
 $(HEAD_TARGET): $(HEAD)
 	gcc -E $(HEAD) > $(HEAD_TEMP)
@@ -55,6 +61,12 @@ $(TRAP_TARGET) : $(TRAP)
 
 $(MEMROY_TARGET) : $(MEMORY)
 	gcc -mcmodel=large -fno-builtin -m64 -c $(MEMORY)
+
+$(INTERRUPT_TARGET) : $(INTERRUPT)
+	gcc -mcmodel=large -fno-builtin -m64 -c $(INTERRUPT)
+
+$(TASK_TARGET) : $(TASK)
+	gcc -mcmodel=large -fno-builtin -m64 -c $(TASK)
 
 clean:
 	$(RM) *.o $(ENTRY_TEMP) $(HEAD_TEMP) $(TARGET) $(SYSTEM)
