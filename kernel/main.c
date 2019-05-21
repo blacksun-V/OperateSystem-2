@@ -4,9 +4,19 @@
 #include "trap.h"
 #include "memory.h"
 
+
+/*
+		static var 
+*/
+
+extern char _text;  //内核程序开始地址
+extern char _etext; //内核程序结束地址
+extern char _edata; //数据段结束地址
+extern char _end;   //BSS段结束地址
+
 struct Global_Memory_Descriptor memory_management_struct = {{0},0};
 
-void Start_Kernel()
+void Start_Kernel(void)
 {
     int *addr = (int *)0xffff800000a00000; //帧缓存地址
     int i = 0;
@@ -48,6 +58,8 @@ void Start_Kernel()
         addr += 1;
     }
 
+
+    //初始化屏幕光标信息
     Pos.XResolution = 1440;
 	Pos.YResolution = 900;
 
@@ -58,7 +70,7 @@ void Start_Kernel()
 	Pos.YCharSize = 16;
 
 	Pos.FB_addr = (int *)0xffff800000a00000;
-	Pos.FB_length = (Pos.XResolution * Pos.YResolution * 4);
+	Pos.FB_length = (Pos.XResolution * Pos.YResolution * 4 + PAGE_4K_SIZE - 1) & PAGE_4K_MASK;
 
     color_printk(YELLOW,BLACK,"Hello\t\t World!\n");
     color_printk(WHITE,BLACK,"TEST %s","HAHAHHA\n\n");
@@ -71,9 +83,31 @@ void Start_Kernel()
 
 	// i = 1/0;
 	// i = *(int *)0xffff80000aa00000;
+    //初始化内存信息
+    memory_management_struct.start_code = (unsigned long)& _text;
+	memory_management_struct.end_code   = (unsigned long)& _etext;
+	memory_management_struct.end_data   = (unsigned long)& _edata;
+	memory_management_struct.end_brk    = (unsigned long)& _end;
     
     color_printk(RED, BLACK, "memory init \n");
     init_memory();
+    
+    struct Page * page = NULL;
+    //申请64个页试一下
+    color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
+	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
+
+	page = alloc_pages(ZONE_NORMAL,40,PG_PTable_Maped | PG_Active | PG_Kernel);
+
+	for(i = 0;i <= 40;i++)
+	{
+		color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\t",i,(page + i)->attribute,(page + i)->PHY_address);
+		i++;
+		color_printk(INDIGO,BLACK,"page%d\tattribute:%#018lx\taddress:%#018lx\n",i,(page + i)->attribute,(page + i)->PHY_address);
+	}
+
+	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*memory_management_struct.bits_map);
+	color_printk(RED,BLACK,"memory_management_struct.bits_map:%#018lx\n",*(memory_management_struct.bits_map + 1));
 
     while(1);
 
